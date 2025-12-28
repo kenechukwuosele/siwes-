@@ -1,0 +1,8 @@
+
+{
+  "name": "SIWES Digital Logbook & Supervision System",
+  "description": "A comprehensive digital solution for the Students Industrial Work Experience Scheme (SIWES) in Nigeria, featuring specialized dashboards for students, supervisors, and ITF monitoring officers.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
