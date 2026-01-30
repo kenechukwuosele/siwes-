@@ -1,37 +1,82 @@
-# Digital SIWES Management System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+# 📚 Digital SIWES Management System
+**Automating the Industrial Training Experience for the Nigerian Education Sector.**
 
-A streamlined digital solution designed to automate the Student Industrial Work Experience Scheme (SIWES). This platform replaces traditional logbooks with a digital interface, making it easier for students to log daily activities and for supervisors to monitor progress remotely.
+The Digital SIWES (Student Industrial Work Experience Scheme) App is a comprehensive platform designed to replace traditional paper logbooks. It streamlines the connection between students, industry supervisors, and institution-based supervisors, ensuring transparent logging, real-time monitoring, and seamless grading.
 
-## 🚀 Features
+---
 
-- **Digital Logbook:** Students can record daily activities, upload photos of work, and track hours.
-- **Remote Supervision:** Industry and institution supervisors can review, comment, and sign off on logs digitally.
-- **Placement Management:** Simplified process for students to register their place of attachment.
-- **Automated Grading:** Tools for supervisors to grade students based on their performance and log consistency.
-- **Notifications:** Real-time alerts for submission deadlines and supervisor feedback.
-- **PDF Export:** Generate a professional, formatted final report/logbook at the end of the program.
+## 🌟 Key Features
+
+* **🖨️ Digital Logbook:** Students can record daily activities, attach photos of tasks, and track their progress in real-time.
+* **📡 Remote Supervision:** Industry-based and School-based supervisors can review and sign off on entries remotely, eliminating logistical delays.
+* **📊 Automated Grading:** Features built-in evaluation forms (Form 8) and grading modules based on ITF standards.
+* **📄 PDF Report Generation:** Instantly export the entire 6-month logbook into a standardized PDF format for final submission and defense.
+* **🔔 Real-time Notifications:** Alerts for students and supervisors regarding pending approvals or weekly summaries.
 
 ## 🛠️ Tech Stack
 
-*This project is built using:*
+* **Frontend:** [React.js / Flutter] *(Select your preferred platform)*
+* **Backend:** Python (FastAPI / Node.js)
+* **Database:** PostgreSQL / MongoDB
+* **Storage:** AWS S3 / Cloudinary (for logbook photo uploads)
+* **Reporting:** WeasyPrint / ReportLab (for PDF generation)
 
-- **Frontend:** [e.g., React.js / Flutter / Vue.js]
-- **Backend:** [e.g., Node.js / Python Django / Laravel]
-- **Database:** [e.g., PostgreSQL / MongoDB / Firebase]
-- **Authentication:** [e.g., JWT / Firebase Auth]
+## 📂 Project Structure
 
-## 📋 Prerequisites
+```text
+siwes-app/
+├── mobile_app/         # Student & Supervisor mobile interface
+├── backend/            # API logic and user authentication
+├── docs/               # ITF guidelines and project documentation
+├── services/           # PDF generation and notification engines
+└── tests/              # End-to-end testing for grading logic
 
-Before you begin, ensure you have the following installed:
-- [List tools, e.g., Node.js v16+, Docker, or Flutter SDK]
-- A package manager like `npm` or `yarn`.
+```
 
-## ⚙️ Installation & Setup
+## 🚦 Quick Start
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/your-username/digital-siwes-app.git](https://github.com/your-username/digital-siwes-app.git)
-   cd digital-siwes-app
+### 1. Prerequisite
+
+Ensure you have Python 3.10+ and the necessary database drivers installed.
+
+### 2. Setup
+
+```bash
+git clone [https://github.com/your-repo/siwes-app.git](https://github.com/your-repo/siwes-app.git)
+cd siwes-app
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+```
+
+### 3. Environment Variables
+
+Create a `.env` file with the following:
+
+```env
+DATABASE_URL=your_postgres_url
+SECRET_KEY=your_secure_hash
+SUPERVISOR_GRADES_ENABLED=true
+
+```
+
+### 4. Launch
+
+```bash
+# Start the backend server
+uvicorn backend.main:app --reload
+
+```
+
+---
+
+## 📖 The Problem It Solves
+
+Traditional SIWES logbooks are prone to damage, loss, and fraudulent entries made at the last minute. This system enforces **daily logging** and provides school supervisors with a transparent timeline of a student's industrial exposure, bridging the distance gap between the university and the internship location.
+
+---
+
+© 2026 Digital SIWES Project - Modernizing Industrial Training in Nigeria.
