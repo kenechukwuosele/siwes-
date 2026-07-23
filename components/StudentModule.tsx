@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { SIWESLog, LogStatus, SyncStatus } from '../types';
 import { analyzeLogEntry } from '../services/geminiService';
+import EvidenceImage from './EvidenceImage';
 
 const StudentModule: React.FC = () => {
   const [logs, setLogs] = useState<SIWESLog[]>([]);
@@ -14,7 +15,7 @@ const StudentModule: React.FC = () => {
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [newLog, setNewLog] = useState({ description: '', date: new Date().toISOString().split('T')[0] });
   const [previewImage, setPreviewImage] = useState<string | null>(null); // For display
-  const [imageFile, setImageFile] = useState<File | null>(null); // For upload
+  const [imageFiles, setImageFiles] = useState<File[]>([]); // For upload
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<any>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -71,13 +72,19 @@ const StudentModule: React.FC = () => {
 
   const handleAddLog = async () => {
     if (editingLogId) {
-        // Edit logic (Not fully implemented in backend yet for file update etc, sticking to basic update)
-         const updateData = {
-              activity_description: newLog.description,
-              date: newLog.date,
-         };
-         await import('../services/api').then(m => m.logService.updateLogStatus(Number(editingLogId), LogStatus.SUBMITTED)); // Hacky, needs real update endpoint
-         fetchLogs();
+        try {
+          const formData = new FormData();
+          formData.append('activity_description', newLog.description);
+          formData.append('date', newLog.date);
+          formData.append('week_number', String(Math.ceil(new Date(newLog.date).getDate() / 7)));
+          imageFiles.forEach(file => formData.append('evidence_images', file));
+          await import('../services/api').then(m => m.logService.updateLog(Number(editingLogId), formData));
+          fetchLogs();
+        } catch (e) {
+          console.error("Failed to update log", e);
+          alert("Failed to update log. Please try again.");
+          return;
+        }
     } else {
       // Create new log via API
       try {
@@ -85,9 +92,7 @@ const StudentModule: React.FC = () => {
           formData.append('date', newLog.date);
           formData.append('week_number', String(Math.ceil(new Date(newLog.date).getDate() / 7))); // Simple calc
           formData.append('activity_description', newLog.description);
-          if (imageFile) {
-              formData.append('evidence_image', imageFile);
-          }
+          imageFiles.forEach(file => formData.append('evidence_images', file));
 
           await import('../services/api').then(m => m.logService.createLog(formData));
           fetchLogs();
@@ -106,23 +111,26 @@ const StudentModule: React.FC = () => {
     setEditingLogId(null);
     setNewLog({ description: '', date: new Date().toISOString().split('T')[0] });
     setPreviewImage(null);
-    setImageFile(null);
+    setImageFiles([]);
     setAiFeedback(null);
   };
 
   const startEditing = (log: SIWESLog) => {
     setEditingLogId(log.id);
     setNewLog({ description: log.activityDescription, date: log.date });
-    setPreviewImage(log.evidenceImageUrl || null);
+    setPreviewImage(null);
     setIsAdding(true);
   };
 
   const deleteLog = async (id: string) => {
     if (confirm("Are you sure you want to delete this log entry?")) {
-      // API delete
-      // await logService.delete(id);
-      // fetchLogs();
-      alert("Delete not implemented in MVP API yet"); 
+      try {
+        await import('../services/api').then(m => m.logService.deleteLog(Number(id)));
+        fetchLogs();
+      } catch (e) {
+        console.error("Failed to delete log", e);
+        alert("Only your unapproved log entries can be deleted.");
+      }
     }
   };
 
@@ -206,9 +214,10 @@ const StudentModule: React.FC = () => {
                 </div>
               </div>
               <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{log.activityDescription}</p>
-              {log.evidenceImageUrl && (
+              {log.hasEvidence && (
                 <div className="relative aspect-video rounded-lg overflow-hidden border">
-                  <img src={log.evidenceImageUrl} className="w-full h-full object-cover" alt="Evidence" />
+                  <EvidenceImage logId={log.id} evidenceId={log.evidenceIds[0]} className="w-full h-full object-cover" alt="Evidence" />
+                  {log.evidenceIds.length > 1 && <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-1 text-xs text-white">+{log.evidenceIds.length - 1} images</span>}
                 </div>
               )}
               {log.supervisorComment && (
@@ -374,12 +383,12 @@ const StudentModule: React.FC = () => {
                             <input 
                                 id="fileInput" 
                                 type="file" 
-                                accept="image/*" 
+                                accept="image/*" multiple
                                 className="hidden" 
                                 onChange={(e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                    setImageFile(file);
+                                    setImageFiles(Array.from(e.target.files || []));
                                     const reader = new FileReader();
                                     reader.onloadend = () => setPreviewImage(reader.result as string);
                                     reader.readAsDataURL(file);

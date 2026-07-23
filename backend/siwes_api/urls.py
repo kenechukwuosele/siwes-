@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from users.views import RegisterView, UserViewSet
+from users.views import ActivateSupervisorView, RegisterView, UserViewSet
 from logbooks.views import LogEntryViewSet
 from institutions.views import InstitutionViewSet
 
@@ -19,6 +19,7 @@ urlpatterns = [
     
     # Auth Endpoints
     path('api/auth/register/', RegisterView.as_view(), name='auth_register'),
+    path('api/auth/activate-supervisor/', ActivateSupervisorView.as_view(), name='activate_supervisor'),
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     

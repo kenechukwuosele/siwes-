@@ -2,6 +2,7 @@
 export enum UserRole {
   STUDENT = 'STUDENT',
   SUPERVISOR = 'SUPERVISOR',
+  INSTITUTION_ADMIN = 'INSTITUTION_ADMIN',
   ITF_OFFICER = 'ITF_OFFICER'
 }
 
@@ -24,7 +25,8 @@ export interface SIWESLog {
   date: string;
   weekNumber: number;
   activityDescription: string;
-  evidenceImageUrl?: string;
+  hasEvidence: boolean;
+  evidenceIds: string[];
   status: LogStatus;
   syncStatus: SyncStatus; // Tracks if the log is saved to cloud or just local
   supervisorComment?: string;

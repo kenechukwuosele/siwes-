@@ -10,6 +10,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Institution
         fields = ['id', 'name', 'code', 'brand_color', 'active_students', 'total_students', 'approved_logs']
+        read_only_fields = ['code']
 
     def get_active_students(self, obj):
         return obj.students.count()

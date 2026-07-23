@@ -1,7 +1,7 @@
 import axios from "axios";
 import { UserRole } from "../types";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -60,14 +60,20 @@ export const authService = {
   },
 
   changePassword: async (current: string, newPass: string) => {
-    // In a real app this would have its own endpoint, but for MVP we might patch 'password' on /me/
-    // OR assumming a custom action. Let's assume a custom action on UserViewSet
-    // Since we didn't implement it yet, let's just stick to the plan:
-    // I need to add set_password action to UserViewSet in backend if I want this to work strictly.
-    // For now let's PATCH /users/me/ with password (standard Django behavior usually requires old password verification)
-    // I will assume the backend supports a simple update for now or I will add the action in a moment.
-    const response = await api.patch("/users/me/", { password: newPass });
+    const response = await api.post("/users/change_password/", {
+      current_password: current,
+      new_password: newPass,
+    });
     return response.data;
+  },
+
+  getNotifications: async () => {
+    const response = await api.get("/users/notifications/");
+    return response.data;
+  },
+
+  markNotificationRead: async (id: number) => {
+    await api.post(`/users/notifications/${id}/read/`);
   },
 
   getAllStudents: async () => {
@@ -87,6 +93,34 @@ export const authService = {
     const response = await api.get("/users/");
     return response.data;
   },
+
+  getUsers: async () => {
+    const response = await api.get("/users/");
+    return response.data;
+  },
+
+  getAssignmentSettings: async () => {
+    const response = await api.get("/users/assignment_settings/");
+    return response.data;
+  },
+
+  assignSupervisor: async (studentId: string, supervisorId: string, force = false, reason = '') => {
+    const response = await api.post(`/users/${studentId}/assign-supervisor/`, {
+      supervisor_id: supervisorId,
+      force,
+      reason,
+    });
+    return response.data;
+  },
+
+  getSupervisorInvitations: async () => (await api.get('/users/supervisor-invitations/')).data,
+  inviteSupervisors: async (supervisors: any[]) => (await api.post('/users/supervisor-invitations/', { supervisors })).data,
+  importSupervisorCsv: async (csvFile: File) => {
+    const formData = new FormData();
+    formData.append('csv_file', csvFile);
+    return (await api.post('/users/supervisor-invitations/import/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+  },
+  activateSupervisor: async (token: string, password: string) => (await api.post('/auth/activate-supervisor/', { token, password })).data,
 };
 
 // Transform backend snake_case log data to frontend camelCase format
@@ -97,9 +131,8 @@ const transformLog = (log: any) => ({
   date: log.date || "",
   weekNumber: log.week_number || 0,
   activityDescription: log.activity_description || "",
-  evidenceImageUrl: log.evidence_image
-    ? `http://localhost:8000${log.evidence_image}`
-    : undefined,
+  hasEvidence: Boolean(log.evidence_available || log.evidence_items?.length),
+  evidenceIds: (log.evidence_items || []).map((item: any) => item.id.toString()),
   status: log.status || "PENDING",
   syncStatus: "SYNCED",
   supervisorComment: log.supervisor_comment || undefined,
@@ -147,6 +180,21 @@ export const logService = {
       supervisor_comment: comment,
     });
     return response.data;
+  },
+
+  updateLog: async (id: number, logData: FormData | Record<string, unknown>) => {
+    const headers = logData instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+    const response = await api.patch(`/logs/${id}/`, logData, { headers });
+    return response.data;
+  },
+
+  deleteLog: async (id: number) => {
+    await api.delete(`/logs/${id}/`);
+  },
+
+  getEvidence: async (id: number, evidenceId?: string) => {
+    const response = await api.get(evidenceId ? `/logs/${id}/evidence/${evidenceId}/` : `/logs/${id}/evidence/`, { responseType: "blob" });
+    return response.data as Blob;
   },
 };
 

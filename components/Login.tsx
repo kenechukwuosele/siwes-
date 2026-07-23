@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { UserRole } from '../types';
-import { LogIn, GraduationCap, ShieldCheck, Briefcase, Lock, User as UserIcon } from 'lucide-react';
+import { LogIn, GraduationCap, ShieldCheck, Briefcase, Building2, Lock, User as UserIcon } from 'lucide-react';
+import itfLogo from '../assets/itf-logo.png';
 
 interface LoginProps {
   onLogin: (role: UserRole, identifier: string) => void;
@@ -49,6 +50,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
   const roles = [
     { id: UserRole.STUDENT, icon: GraduationCap, label: 'Student', desc: 'Matric Number' },
     { id: UserRole.SUPERVISOR, icon: ShieldCheck, label: 'Supervisor', desc: 'Staff ID' },
+    { id: UserRole.INSTITUTION_ADMIN, icon: Building2, label: 'School Admin', desc: 'Admin ID' },
     { id: UserRole.ITF_OFFICER, icon: Briefcase, label: 'ITF Officer', desc: 'Officer Email' },
   ];
 
@@ -57,7 +59,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
         <div className="p-8 text-center bg-slate-50 border-b">
           <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200">
-            <img src="https://picsum.photos/seed/itf-logo/64/64" alt="ITF" className="w-10 h-10 rounded" />
+            <img src={itfLogo} alt="Industrial Training Fund logo" className="w-10 h-10 rounded object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">SIWES Portal</h1>
           <p className="text-slate-500 text-sm mt-1">Industrial Training Fund, Nigeria</p>
@@ -71,7 +73,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
           )}
           <div className="space-y-3">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Access Level</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {roles.map((r) => {
                 const Icon = r.icon;
                 return (

@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 .env.local
+.env.production
+.env.production.example
+.env.staging
+.env.example
+__pycache__/
+*.py[cod]

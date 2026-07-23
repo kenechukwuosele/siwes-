@@ -1,12 +1,14 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { InstitutionStats } from '../types';
+import { InstitutionStats, SIWESLog } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { Globe, Building2, Users, FileCheck, MapPin, ExternalLink, Download } from 'lucide-react';
+import { Globe, Building2, Users, FileCheck, MapPin, ExternalLink, Download, Image as ImageIcon, Calendar } from 'lucide-react';
+import EvidenceImage from './EvidenceImage';
 
 const ITFModule: React.FC = () => {
   const [institutions, setInstitutions] = useState<InstitutionStats[]>([]);
+  const [approvedLogs, setApprovedLogs] = useState<SIWESLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +24,8 @@ const ITFModule: React.FC = () => {
                  approvedLogs: inst.approved_logs
              }));
             setInstitutions(mapped);
+            const logs = await import('../services/api').then(m => m.logService.getLogs());
+            setApprovedLogs(logs);
         } catch (e) {
             console.error(e);
         } finally {
@@ -60,6 +64,48 @@ const ITFModule: React.FC = () => {
         </div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-800/20 rounded-full -mr-20 -mt-20 blur-3xl"></div>
       </div>
+
+      {/* National Evidence Feed: the API returns approved logs only for ITF officers. */}
+      <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-8 py-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="font-bold text-slate-800">Approved Student Evidence</h3>
+            <p className="text-sm text-slate-500">Cross-institution evidence reviewed by supervisors.</p>
+          </div>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full">
+            {approvedLogs.length} approved log{approvedLogs.length === 1 ? '' : 's'}
+          </span>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-slate-400">Loading approved evidence…</div>
+        ) : approvedLogs.length === 0 ? (
+          <div className="p-8 text-center text-slate-400">No approved logs are available yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-6">
+            {approvedLogs.map(log => (
+              <article key={log.id} className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50">
+                {log.hasEvidence ? (
+                  <div className="aspect-video bg-slate-100">
+                    <EvidenceImage logId={log.id} evidenceId={log.evidenceIds[0]} className="w-full h-full object-cover" alt="Student site evidence" />
+                  </div>
+                ) : (
+                  <div className="aspect-video flex flex-col items-center justify-center text-slate-400 bg-slate-100">
+                    <ImageIcon size={28} />
+                    <span className="text-xs mt-2">No image attached</span>
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  <p className="text-sm font-bold text-slate-800 line-clamp-2">{log.activityDescription}</p>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{log.studentId}</span>
+                    <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(log.date).toLocaleDateString('en-NG')}</span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -183,7 +229,7 @@ const ITFModule: React.FC = () => {
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500" style={{ width: `${(inst.activeStudents / inst.totalStudents) * 100}%` }}></div>
+                        <div className="h-full bg-emerald-500" style={{ width: `${inst.totalStudents ? (inst.activeStudents / inst.totalStudents) * 100 : 0}%` }}></div>
                       </div>
                       <span className="text-sm font-bold text-slate-700">{inst.activeStudents}</span>
                     </div>

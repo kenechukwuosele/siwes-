@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from institutions.serializers import InstitutionSerializer
 from institutions.models import Institution
+from .services import automatically_assign_student
+from .models import InstitutionNotification, SupervisorInvitation
 
 User = get_user_model()
 
@@ -11,61 +13,58 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'role', 'first_name', 'last_name', 
-                  'matric_number', 'course', 'placement_org', 'institution', 'institution_details',
+                  'matric_number', 'course', 'placement_org', 'institution', 'institution_details', 'assigned_supervisor', 'assignment_status', 'is_active',
                   'acceptance_letter', 'date_joined']
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'username', 'role', 'institution', 'assigned_supervisor', 'assignment_status', 'is_active', 'date_joined']
+
+    def validate_acceptance_letter(self, value):
+        if value and value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Acceptance letters must be 5 MB or smaller.")
+        return value
+
+
+class InstitutionNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstitutionNotification
+        fields = ['id', 'student', 'message', 'is_read', 'created_at']
+        read_only_fields = fields
+
+
+class SupervisorInvitationSerializer(serializers.ModelSerializer):
+    supervisor_name = serializers.SerializerMethodField()
+    class Meta:
+        model = SupervisorInvitation
+        fields = ['id', 'supervisor_name', 'status', 'expires_at', 'activated_at', 'created_at']
+
+    def get_supervisor_name(self, obj):
+        return obj.supervisor.get_full_name() or obj.supervisor.username
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    institution = serializers.CharField(required=False, allow_blank=True)
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all(), required=True)
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'role', 'first_name', 'last_name', 
+        fields = ['username', 'email', 'password', 'role', 'first_name', 'last_name',
                   'matric_number', 'institution', 'course']
+
+    def validate_role(self, value):
+        # Staff accounts are provisioned by platform administrators, never self-registered.
+        if value != User.Role.STUDENT:
+            raise serializers.ValidationError("Only student self-registration is available.")
+        return value
     
     def validate(self, data):
-        role = data.get('role', 'STUDENT')
-        if role in ['STUDENT', 'SUPERVISOR']:
-            if not data.get('institution'):
-                raise serializers.ValidationError({"institution": "Institution is required for students and supervisors."})
-            
-            if role == 'STUDENT' and not data.get('matric_number'):
-                 raise serializers.ValidationError({"matric_number": "Matric number is required for students."})
+        role = data.get('role', User.Role.STUDENT)
+        if role == 'STUDENT' and not data.get('matric_number'):
+            raise serializers.ValidationError({"matric_number": "Matric number is required for students."})
                  
-        elif role == 'ITF_OFFICER':
-             # ITF Officers should not have matric_number or institution (usually independent)
-            if data.get('matric_number'):
-                raise serializers.ValidationError({"matric_number": "ITF Officers cannot have a matric number."})
-
         return data
 
     def create(self, validated_data):
         role = validated_data.get('role', 'STUDENT')
         
-        institution = None
-        if role in ['STUDENT', 'SUPERVISOR']:
-            inst_name = validated_data.get('institution')
-            if inst_name:
-                import hashlib
-                # Deterministic color generation
-                hash_object = hashlib.md5(inst_name.encode())
-                hex_dig = hash_object.hexdigest()
-                color = f"#{hex_dig[:6]}"
-                
-                # Create or get institution
-                # Generate a simple code if creating new
-                from django.utils.text import slugify
-                base_code = slugify(inst_name)[:40]
-                code = f"{base_code}-{hex_dig[:4]}"
-                
-                institution, created = Institution.objects.get_or_create(
-                    name=inst_name,
-                    defaults={
-                        'code': code,
-                        'brand_color': color
-                    }
-                )
+        institution = validated_data.pop('institution')
 
         # Ensure non-student roles don't get student-specific fields
         matric_number = validated_data.get('matric_number') if role == 'STUDENT' else None
@@ -82,4 +81,5 @@ class RegisterSerializer(serializers.ModelSerializer):
             institution=institution,
             course=course
         )
+        automatically_assign_student(user)
         return user

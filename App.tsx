@@ -3,10 +3,12 @@ import { UserRole } from './types';
 import StudentModule from './components/StudentModule';
 import SupervisorModule from './components/SupervisorModule';
 import ITFModule from './components/ITFModule';
+import InstitutionAdminModule from './components/InstitutionAdminModule';
 import Login from './components/Login';
 import Register from './components/Register';
 import Settings from './components/Settings';
-import { User, LogOut, ShieldCheck, Briefcase, GraduationCap, Bell, Settings as SettingsIcon } from 'lucide-react';
+import itfLogo from './assets/itf-logo.png';
+import { User, LogOut, ShieldCheck, Briefcase, GraduationCap, Building2, Bell, Settings as SettingsIcon } from 'lucide-react';
 
 interface AuthUser {
   role: UserRole;
@@ -19,6 +21,8 @@ const App: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [showRegister, setShowRegister] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +46,16 @@ const App: React.FC = () => {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    import('./services/api').then(m => m.authService.getNotifications())
+      .then(setNotifications)
+      .catch(() => setNotifications([]));
+  }, [user]);
+
   const handleLogin = async (role: UserRole, identifier: string) => {
      try {
         const userData = await import('./services/api').then(m => m.authService.getCurrentUser());
@@ -60,6 +74,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setShowSettings(false);
+    setShowNotifications(false);
     import('./services/api').then(m => m.authService.logout());
   };
 
@@ -67,6 +82,7 @@ const App: React.FC = () => {
     switch (role) {
       case UserRole.STUDENT: return <GraduationCap size={18} />;
       case UserRole.SUPERVISOR: return <ShieldCheck size={18} />;
+      case UserRole.INSTITUTION_ADMIN: return <Building2 size={18} />;
       case UserRole.ITF_OFFICER: return <Briefcase size={18} />;
     }
   };
@@ -91,7 +107,7 @@ const App: React.FC = () => {
       <nav className="bg-emerald-900 text-white px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-2">
           <div className="bg-white p-1 rounded shadow-sm">
-             <img src="https://picsum.photos/seed/itf/40/40" alt="ITF Logo" className="w-8 h-8 rounded" />
+             <img src={itfLogo} alt="Industrial Training Fund logo" className="w-8 h-8 rounded object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-base leading-none">SIWES+</h1>
@@ -100,10 +116,24 @@ const App: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          <button className="p-2 text-emerald-100 hover:bg-emerald-800 rounded-full transition-colors relative">
+          <button
+            onClick={() => setShowNotifications(value => !value)}
+            className="p-2 text-emerald-100 hover:bg-emerald-800 rounded-full transition-colors relative"
+            aria-label="View notifications"
+          >
             <Bell size={20} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-emerald-900"></span>
+            {notifications.some(notification => !notification.is_read) && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-emerald-900"></span>}
           </button>
+          {showNotifications && (
+            <div className="absolute right-24 top-14 z-50 w-80 rounded-xl bg-white text-slate-800 shadow-xl ring-1 ring-black/10 overflow-hidden">
+              <div className="px-4 py-3 border-b font-bold text-sm">Notifications</div>
+              {notifications.length ? notifications.slice(0, 5).map(notification => (
+                <button key={notification.id} onClick={() => import('./services/api').then(m => m.authService.markNotificationRead(notification.id)).then(() => setNotifications(items => items.map(item => item.id === notification.id ? {...item, is_read: true} : item)))} className={`block w-full px-4 py-3 border-b last:border-0 text-left text-xs ${notification.is_read ? 'text-slate-500' : 'bg-emerald-50 text-slate-800 font-medium'}`}>
+                  {notification.message}
+                </button>
+              )) : <div className="px-4 py-5 text-xs text-slate-400">No notifications.</div>}
+            </div>
+          )}
           
           <div className="h-8 w-px bg-emerald-800 hidden sm:block"></div>
           
@@ -138,6 +168,7 @@ const App: React.FC = () => {
       <main className="flex-1 overflow-hidden flex flex-col">
         {user.role === UserRole.STUDENT && <StudentModule />}
         {user.role === UserRole.SUPERVISOR && <SupervisorModule />}
+        {user.role === UserRole.INSTITUTION_ADMIN && <InstitutionAdminModule />}
         {user.role === UserRole.ITF_OFFICER && <ITFModule />}
       </main>
     </div>

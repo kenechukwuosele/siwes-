@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserRole } from '../types';
-import { UserPlus, GraduationCap, ShieldCheck, Briefcase, Mail, Lock, User as UserIcon, ArrowLeft, Building } from 'lucide-react';
+import { UserPlus, GraduationCap, Mail, Lock, User as UserIcon, ArrowLeft, Building } from 'lucide-react';
 
 interface RegisterProps {
     onSwitchToLogin: () => void;
@@ -8,7 +8,6 @@ interface RegisterProps {
 }
 
 const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
-    const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -19,13 +18,14 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [institutions, setInstitutions] = useState<any[]>([]);
 
+    useEffect(() => {
+        import('../services/api').then(m => m.institutionService.getAll())
+            .then(setInstitutions)
+            .catch(() => setError('Institutions could not be loaded. Please try again later.'));
+    }, []);
 
-    const roles = [
-        { id: UserRole.STUDENT, icon: GraduationCap, label: 'Student', desc: 'Matric Number' },
-        { id: UserRole.SUPERVISOR, icon: ShieldCheck, label: 'Supervisor', desc: 'Staff ID' },
-        { id: UserRole.ITF_OFFICER, icon: Briefcase, label: 'ITF Officer', desc: 'Officer Email' },
-    ];
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,19 +39,14 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
         try {
             const payload: any = {
                 ...formData,
-                role: role,
-                matric_number: role === UserRole.STUDENT ? formData.username : undefined
+                role: UserRole.STUDENT,
+                matric_number: formData.username
             };
-
-            // Remove institution for ITF Officers to avoid "This field may not be blank" error
-            if (role === UserRole.ITF_OFFICER) {
-                delete payload.institution;
-            }
             
             await import('../services/api').then(m => m.authService.register(payload));
             
             // Auto login logic could go here, but for now let's just trigger success callback
-            onSuccess(role, formData.username);
+            onSuccess(UserRole.STUDENT, formData.username);
         } catch (err: any) {
             console.error(err);
             const msg = err.response?.data ? JSON.stringify(err.response.data) : 'Registration failed.';
@@ -73,7 +68,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
                         Back to Login
                     </button>
                     <h2 className="text-3xl font-bold text-slate-800 mt-4">Create Account</h2>
-                    <p className="text-slate-500 text-sm mt-1">Join the SIWES Digital Supervision Platform</p>
+                    <p className="text-slate-500 text-sm mt-1">Student registration. Staff accounts are issued by an administrator.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-8 pt-2 space-y-6">
@@ -83,28 +78,8 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
                         </div>
                     )}
 
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Register As</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                            {roles.map((r) => {
-                                const Icon = r.icon;
-                                return (
-                                    <button
-                                        key={r.id}
-                                        type="button"
-                                        onClick={() => setRole(r.id)}
-                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
-                                            role === r.id
-                                                ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                                                : 'border-slate-100 text-slate-400 hover:border-slate-200 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <Icon size={20} className="mb-1" />
-                                        <span className="text-[10px] font-bold">{r.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">
+                        <GraduationCap size={20} /> Student account
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -137,7 +112,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
                         <input
                             name="username"
                             required
-                            placeholder={roles.find(r => r.id === role)?.desc || "Username"}
+                                placeholder="Matric Number"
                             value={formData.username}
                             onChange={handleChange}
                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm"
@@ -160,21 +135,21 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onSuccess }) => {
                         />
                     </div>
 
-                    {(role === UserRole.STUDENT || role === UserRole.SUPERVISOR) && (
-                        <div className="relative">
+                    <div className="relative">
                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                 <Building size={18} />
                             </div>
-                             <input
+                             <select
                                 name="institution"
-                                required={role === UserRole.STUDENT} // Optional for supervisor? No user requested input. Let's make it required for consistency if they are registering under a uni.
-                                placeholder="Name of your Institution"
+                                required
                                 value={formData.institution}
                                 onChange={handleChange}
                                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm"
-                             />
+                             >
+                                <option value="">Select your institution</option>
+                                {institutions.map(institution => <option key={institution.id} value={institution.id}>{institution.name}</option>)}
+                             </select>
                         </div>
-                    )}
 
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">

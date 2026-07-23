@@ -24,3 +24,12 @@ class LogEntry(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.date}"
+
+
+class LogEvidence(models.Model):
+    log_entry = models.ForeignKey(LogEntry, on_delete=models.CASCADE, related_name='evidence_items')
+    image = models.ImageField(upload_to='logs/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['id']

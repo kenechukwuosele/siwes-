@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { SIWESLog, LogStatus, StudentProfile } from '../types';
 // Fixed: Added missing Briefcase and Clock imports from lucide-react
 import { Search, User, Filter, Check, X, FileText, Download, MessageSquare, Briefcase, Clock } from 'lucide-react';
+import EvidenceImage from './EvidenceImage';
 
 const SupervisorModule: React.FC = () => {
   const [students, setStudents] = useState<StudentProfile[]>([]);
@@ -235,19 +236,14 @@ const SupervisorModule: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        {log.evidenceImageUrl && (
+                        {log.hasEvidence && (
                           <div className="flex gap-4 items-center p-3 bg-slate-50 rounded-lg border border-slate-100 print:hidden">
                              <div className="w-12 h-12 rounded bg-slate-200 overflow-hidden">
-                               <img src={log.evidenceImageUrl} className="w-full h-full object-cover" alt="Small Preview" />
+                               <EvidenceImage logId={log.id} evidenceId={log.evidenceIds[0]} className="w-full h-full object-cover" alt="Site evidence preview" />
                              </div>
                              <div>
                                <p className="text-xs font-bold text-slate-700">Site Evidence Attached</p>
-                               <button 
-                                onClick={() => window.open(log.evidenceImageUrl, '_blank')}
-                                className="text-[10px] text-emerald-600 hover:underline font-bold"
-                               >
-                                View Full Resolution
-                               </button>
+                               <p className="text-[10px] text-slate-500">Protected evidence image</p>
                              </div>
                           </div>
                         )}
