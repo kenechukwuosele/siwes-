@@ -5,7 +5,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+RUN python manage.py collectstatic --noinput
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
-CMD ["gunicorn", "siwes_api.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-"]
+CMD ["sh", "-c", "gunicorn siwes_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --access-logfile -"]
