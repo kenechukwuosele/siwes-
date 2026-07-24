@@ -9,4 +9,4 @@ RUN python manage.py collectstatic --noinput
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
-CMD ["sh", "-c", "gunicorn siwes_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --access-logfile -"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn siwes_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --access-logfile -"]
